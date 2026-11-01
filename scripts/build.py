@@ -118,7 +118,8 @@ def main():
         raise RuntimeError('Expected exactly one custom module at the selected version')
     run('docker', 'run', '--rm', '--network', 'none', '--read-only',
         '--tmpfs', '/data', '--tmpfs', '/config', '--tmpfs', '/tmp',
-        '--env', 'CLOUDFLARE_API_TOKEN=ci-placeholder',
+        # Syntactically valid but deliberately fake; validation has no network.
+        '--env', 'CLOUDFLARE_API_TOKEN=' + '0' * 40,
         '--mount', f'type=bind,src={ROOT / "tests/Caddyfile"},dst=/etc/caddy/Caddyfile,readonly',
         local, 'caddy', 'validate', '--config', '/etc/caddy/Caddyfile', '--adapter', 'caddyfile')
     info.update(version_output=version, modules=modules, tested=True,
