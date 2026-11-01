@@ -1,0 +1,6 @@
+*.example.invalid {
+    tls {
+        dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+    }
+    respond "Caddy Cloudflare validation fixture"
+}
