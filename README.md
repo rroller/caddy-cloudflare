@@ -58,6 +58,31 @@ GitHub can delay scheduled runs and can disable schedules in inactive public
 repositories after 60 days. Check the Actions page if builds stop, and re-enable
 the workflow if GitHub disables it. This is not an unattended deployment system.
 
+## Automatic Dockerfile update PRs
+
+The **Update Dockerfile dependencies** workflow checks daily at 09:43 UTC and
+can also be run manually from Actions. It resolves stable Caddy 2 and Cloudflare
+module releases, updates all four Dockerfile defaults together, and refuses
+downgrades. When nothing changes, it skips the build and PR steps.
+
+Before pushing changes, it builds the proposed Dockerfile versions and checks
+the binary version, sole custom module, and wildcard configuration using the
+same validation as publishing. A failed build leaves the update branch untouched.
+It opens or refreshes one PR on `automation/dockerfile-dependencies`; reserve
+that branch for the bot because each update replaces its history from `main`.
+Review and merge the PR normally. It does not merge or publish images itself.
+
+The workflow uses `GITHUB_TOKEN` with contents and pull-request write permissions;
+no personal token is required. Repository Settings → Actions → General must allow
+GitHub Actions to create and approve pull requests. Organization policy can
+restrict this setting. GitHub may require **Approve workflows to run** on a
+bot-created PR before the separate PR checks run; the update workflow already
+validates the exact proposed versions before creating the PR.
+
+PR checks now use `python3 scripts/build.py --dockerfile-defaults` so they test
+the committed versions. The existing publish workflow continues resolving the
+latest upstream releases independently, including base-image digest changes.
+
 ## Manual build and verification
 
 With Docker, Git and Python 3 installed:
