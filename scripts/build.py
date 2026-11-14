@@ -67,12 +67,21 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--image', default='local/caddy-cloudflare')
     parser.add_argument('--publish', action='store_true')
+    parser.add_argument('--dockerfile-defaults', action='store_true',
+                        help='Build the exact versions pinned in Dockerfile')
     args = parser.parse_args()
     if not re.fullmatch(r'[a-z0-9][a-z0-9./_-]+', args.image):
         parser.error('Use a lowercase image repository without a tag')
     os.chdir(ROOT)
-    caddy = latest_caddy(fetch_json('https://api.github.com/repos/caddyserver/caddy/releases?per_page=100'))
-    cloudflare = module_version(fetch_json('https://proxy.golang.org/github.com/caddy-dns/cloudflare/@latest'))
+    if args.dockerfile_defaults:
+        defaults = dict(re.findall(r'^ARG (\w+)=(.+)$', (ROOT / 'Dockerfile').read_text(), re.MULTILINE))
+        caddy = latest_caddy([{'tag_name': 'v' + defaults['CADDY_VERSION']}])
+        cloudflare = module_version({'Version': defaults['CLOUDFLARE_VERSION']})
+        if defaults['CADDY_BUILDER_IMAGE'] != f'caddy:{caddy}-builder' or defaults['CADDY_RUNTIME_IMAGE'] != f'caddy:{caddy}':
+            raise ValueError('Dockerfile base images must match CADDY_VERSION')
+    else:
+        caddy = latest_caddy(fetch_json('https://api.github.com/repos/caddyserver/caddy/releases?per_page=100'))
+        cloudflare = module_version(fetch_json('https://proxy.golang.org/github.com/caddy-dns/cloudflare/@latest'))
     revision = os.environ.get('GITHUB_SHA') or run('git', 'rev-parse', 'HEAD', capture=True).stdout.strip()
     inputs = {
         'caddy': caddy,
